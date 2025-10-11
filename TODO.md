@@ -1,7 +1,7 @@
-# TODO: Make Meals Dynamic
+# TODO: Secure API Keys and Secrets
 
-- [x] Create src/supabaseClient.js for shared Supabase client
-- [x] Update src/AdminPanel.jsx to fetch and CRUD meals/announcements from Supabase
-- [x] Update src/UserView.jsx to fetch meals/announcements from Supabase
-- [ ] Create Supabase tables: meals and announcements
-- [ ] Test the dynamic functionality
+- [ ] Add .env to .gitignore
+- [ ] Create .env file with Supabase environment variables
+- [ ] Update src/supabaseClient.js to use environment variables
+- [ ] Update netlify/functions/admin-login.js to use environment variables
+- [ ] Set environment variables in Netlify for production deployment
