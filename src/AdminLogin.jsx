@@ -5,12 +5,30 @@ export default function AdminLogin() {
   const [loginData, setLoginData] = useState({ username: '', password: '' });
   const navigate = useNavigate();
 
-  const handleLogin = () => {
-    if (loginData.username === 'admin' && loginData.password === 'admin123') {
-      localStorage.setItem('isAdmin', 'true');
-      navigate('/admin');
-    } else {
-      alert('Invalid username or password!');
+  const handleLogin = async () => {
+    try {
+      const response = await fetch('/.netlify/functions/admin-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: loginData.username,
+          password: loginData.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        localStorage.setItem('adminToken', data.token);
+        navigate('/admin');
+      } else {
+        alert(data.error || 'Invalid username or password!');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      alert('Login failed. Please try again.');
     }
   };
 
