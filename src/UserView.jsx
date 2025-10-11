@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, UtensilsCrossed, Bell, CalendarDays } from 'lucide-react';
 import { supabase } from './supabaseClient';
+import DOMPurify from 'dompurify';
 
 export default function UserView() {
   const [meals, setMeals] = useState([]);
@@ -92,7 +93,7 @@ export default function UserView() {
                   <Bell className="w-6 h-6 flex-shrink-0 mt-1" />
                   <div className="flex-1">
                     <h3 className="font-bold text-lg mb-1">{announcement.title}</h3>
-                    <p className="text-orange-50">{announcement.message}</p>
+                    <p className="text-orange-50" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(announcement.message) }}></p>
                   </div>
                 </div>
               </div>

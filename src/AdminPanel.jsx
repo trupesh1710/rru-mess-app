@@ -79,10 +79,20 @@ export default function AdminPanel() {
   }, []);
 
   const handleAddMeal = async () => {
-    if (!formData.date || !formData.breakfast || !formData.lunch || !formData.snacks || !formData.dinner) {
-      alert('Please fill all fields');
+    const validatedData = {
+      date: formData.date.trim(),
+      breakfast: formData.breakfast.trim(),
+      lunch: formData.lunch.trim(),
+      snacks: formData.snacks.trim(),
+      dinner: formData.dinner.trim(),
+    };
+
+    if (!validatedData.date || !validatedData.breakfast || !validatedData.lunch || !validatedData.snacks || !validatedData.dinner) {
+      alert('All fields are required.');
       return;
     }
+
+    // Optional: Check date is valid, but for now, assume input handles it.
 
     try {
       if (editingMeal) {
@@ -110,8 +120,23 @@ export default function AdminPanel() {
   };
 
   const handleAddAnnouncement = async () => {
-    if (!announcementData.title || !announcementData.message) {
-      alert('Please fill title and message');
+    const validatedData = {
+      title: announcementData.title.trim(),
+      message: announcementData.message.trim(),
+    };
+
+    if (!validatedData.title || !validatedData.message) {
+      alert('Title and message are required.');
+      return;
+    }
+
+    if (validatedData.title.length > 100) {
+      alert('Title must be less than 100 characters.');
+      return;
+    }
+
+    if (validatedData.message.length > 500) {
+      alert('Message must be less than 500 characters.');
       return;
     }
 

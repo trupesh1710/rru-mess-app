@@ -6,6 +6,24 @@ export default function AdminLogin() {
   const navigate = useNavigate();
 
   const handleLogin = async () => {
+    const username = loginData.username.trim();
+    const password = loginData.password.trim();
+
+    if (!username || !password) {
+      alert('Username and password are required.');
+      return;
+    }
+
+    if (username.length < 3 || username.length > 20 || !/^[a-zA-Z0-9]+$/.test(username)) {
+      alert('Username must be 3-20 alphanumeric characters.');
+      return;
+    }
+
+    if (password.length < 6) {
+      alert('Password must be at least 6 characters long.');
+      return;
+    }
+
     try {
       const response = await fetch('/.netlify/functions/admin-login', {
         method: 'POST',
@@ -13,8 +31,8 @@ export default function AdminLogin() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          username: loginData.username,
-          password: loginData.password,
+          username,
+          password,
         }),
       });
 

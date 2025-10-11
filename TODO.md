@@ -1,10 +1,9 @@
-# TODO: Secure API Keys and Secrets
+# TODO: Implement Input Validation and Sanitization
 
-- [x] Add .env to .gitignore
-- [x] Create .env file with Supabase environment variables
-- [x] Update src/supabaseClient.js to use environment variables
-- [x] Update netlify/functions/admin-login.js to use environment variables
-- [x] Set environment variables in Netlify for production deployment
-- [x] Redeploy to production
+- [x] Add client-side validation for AdminLogin.jsx (trim inputs, check lengths)
+- [x] Add client-side validation for AdminPanel.jsx (trim inputs for meals and announcements, check required fields)
+- [x] Add server-side validation for admin-login.js (trim inputs, validate username/password formats)
+- [x] Add sanitization for announcements in UserView.jsx using DOMPurify
+- [x] Test the validations and sanitization
 - [x] Commit changes to git
 - [x] Push changes to remote repository

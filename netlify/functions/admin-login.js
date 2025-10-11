@@ -27,16 +27,33 @@ export default async function handler(request) {
     }
 
     const { username, password } = body;
-    if (!username || !password) {
-      return new Response(JSON.stringify({ success: false, error: 'Missing username or password' }), {
+    const trimmedUsername = username.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedUsername || !trimmedPassword) {
+      return new Response(JSON.stringify({ success: false, error: 'Username and password are required.' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('Username:', username, 'Password:', password);
+    if (trimmedUsername.length < 3 || trimmedUsername.length > 20 || !/^[a-zA-Z0-9]+$/.test(trimmedUsername)) {
+      return new Response(JSON.stringify({ success: false, error: 'Invalid username.' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
 
-    const query = `${supabaseUrl}/rest/v1/admins?select=password_hash&username=eq.${encodeURIComponent(username)}`;
+    if (trimmedPassword.length < 6) {
+      return new Response(JSON.stringify({ success: false, error: 'Password too short.' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log('Username:', trimmedUsername, 'Password:', trimmedPassword);
+
+    const query = `${supabaseUrl}/rest/v1/admins?select=password_hash&username=eq.${encodeURIComponent(trimmedUsername)}`;
     const response = await fetch(query, {
       method: 'GET',
       headers: {
@@ -65,12 +82,12 @@ export default async function handler(request) {
     }
 
     const data = dataArray[0];
-    const isValid = await bcrypt.compare(password, data.password_hash);
+    const isValid = await bcrypt.compare(trimmedPassword, data.password_hash);
     console.log('IsValid:', isValid);
 
     if (isValid) {
       const jwtSecret = process.env.JWT_SECRET || 'your_jwt_secret_here';
-      const token = jwt.sign({ username }, jwtSecret, { expiresIn: '1h' });
+      const token = jwt.sign({ username: trimmedUsername }, jwtSecret, { expiresIn: '1h' });
       return new Response(JSON.stringify({ success: true, token }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
