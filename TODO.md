@@ -7,3 +7,4 @@
 - [x] Test the validations and sanitization
 - [x] Commit changes to git
 - [x] Push changes to remote repository
+- [x] Redeploy to production

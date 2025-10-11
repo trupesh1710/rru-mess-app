@@ -92,27 +92,40 @@ export default function AdminPanel() {
       return;
     }
 
-    // Optional: Check date is valid, but for now, assume input handles it.
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      alert('No admin token found. Please login again.');
+      return;
+    }
+
+    const endpoint = editingMeal ? '/.netlify/functions/admin-update-meal' : '/.netlify/functions/admin-add-meal';
+    const bodyData = editingMeal ? { token, id: editingMeal.id, ...validatedData } : { token, ...validatedData };
 
     try {
-      if (editingMeal) {
-        const { error } = await supabase
-          .from('meals')
-          .update(formData)
-          .eq('id', editingMeal.id);
-        if (error) throw error;
-        setMeals(meals.map(m => m.id === editingMeal.id ? { ...formData, id: m.id } : m));
-        setEditingMeal(null);
+      const response = await fetch(endpoint, {
+        method: editingMeal ? 'PATCH' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(bodyData),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        if (editingMeal) {
+          setMeals(meals.map(m => m.id === editingMeal.id ? { ...validatedData, id: m.id } : m));
+          setEditingMeal(null);
+        } else {
+          const newMeal = data.data[0];
+          setMeals([...meals, newMeal]);
+        }
+        setFormData({ date: '', breakfast: '', lunch: '', snacks: '', dinner: '' });
+        setShowAddForm(false);
+        fetchMeals();
       } else {
-        const { data, error } = await supabase
-          .from('meals')
-          .insert(formData)
-          .select();
-        if (error) throw error;
-        setMeals([...meals, data[0]]);
+        throw new Error(data.error || 'Failed to save meal');
       }
-      setFormData({ date: '', breakfast: '', lunch: '', snacks: '', dinner: '' });
-      setShowAddForm(false);
     } catch (err) {
       console.error('Error saving meal:', err);
       alert('Error saving meal');
@@ -140,26 +153,43 @@ export default function AdminPanel() {
       return;
     }
 
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      alert('No admin token found. Please login again.');
+      return;
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const announcementToSend = editingAnnouncement ? { title: validatedData.title, message: validatedData.message } : { title: validatedData.title, message: validatedData.message, date: today };
+
+    const endpoint = editingAnnouncement ? '/.netlify/functions/admin-update-announcement' : '/.netlify/functions/admin-add-announcement';
+    const bodyData = editingAnnouncement ? { token, id: editingAnnouncement.id, ...announcementToSend } : { token, ...announcementToSend };
+
     try {
-      if (editingAnnouncement) {
-        const { error } = await supabase
-          .from('announcements')
-          .update({ title: announcementData.title, message: announcementData.message })
-          .eq('id', editingAnnouncement.id);
-        if (error) throw error;
-        setAnnouncements(announcements.map(a => a.id === editingAnnouncement.id ? { ...announcementData, id: a.id } : a));
-        setEditingAnnouncement(null);
+      const response = await fetch(endpoint, {
+        method: editingAnnouncement ? 'PATCH' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(bodyData),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        if (editingAnnouncement) {
+          setAnnouncements(announcements.map(a => a.id === editingAnnouncement.id ? { ...announcementToSend, id: a.id } : a));
+          setEditingAnnouncement(null);
+        } else {
+          const newAnnouncement = data.data[0];
+          setAnnouncements([...announcements, newAnnouncement]);
+        }
+        setAnnouncementData({ title: '', message: '', date: '' });
+        setShowAnnouncementForm(false);
+        fetchAnnouncements();
       } else {
-        const newAnnouncement = { ...announcementData, date: new Date().toISOString().split('T')[0] };
-        const { data, error } = await supabase
-          .from('announcements')
-          .insert(newAnnouncement)
-          .select();
-        if (error) throw error;
-        setAnnouncements([...announcements, data[0]]);
+        throw new Error(data.error || 'Failed to save announcement');
       }
-      setAnnouncementData({ title: '', message: '', date: '' });
-      setShowAnnouncementForm(false);
     } catch (err) {
       console.error('Error saving announcement:', err);
       alert('Error saving announcement');
@@ -174,10 +204,28 @@ export default function AdminPanel() {
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this meal?')) {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        alert('No admin token found. Please login again.');
+        return;
+      }
+
       try {
-        const { error } = await supabase.from('meals').delete().eq('id', id);
-        if (error) throw error;
-        setMeals(meals.filter(m => m.id !== id));
+        const response = await fetch('/.netlify/functions/admin-delete-meal', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token, id }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          setMeals(meals.filter(m => m.id !== id));
+        } else {
+          throw new Error(data.error || 'Failed to delete meal');
+        }
       } catch (err) {
         console.error('Error deleting meal:', err);
         alert('Error deleting meal');
@@ -193,10 +241,28 @@ export default function AdminPanel() {
 
   const handleDeleteAnnouncement = async (id) => {
     if (window.confirm('Are you sure you want to delete this announcement?')) {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        alert('No admin token found. Please login again.');
+        return;
+      }
+
       try {
-        const { error } = await supabase.from('announcements').delete().eq('id', id);
-        if (error) throw error;
-        setAnnouncements(announcements.filter(a => a.id !== id));
+        const response = await fetch('/.netlify/functions/admin-delete-announcement', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token, id }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          setAnnouncements(announcements.filter(a => a.id !== id));
+        } else {
+          throw new Error(data.error || 'Failed to delete announcement');
+        }
       } catch (err) {
         console.error('Error deleting announcement:', err);
         alert('Error deleting announcement');
