@@ -126,8 +126,10 @@ export default function MessApp() {
   const getWeekMeals = () => {
     const today = new Date();
     const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - today.getDay());
-    
+    const day = startOfWeek.getDay();
+    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
+    startOfWeek.setDate(diff);
+
     const weekMeals = [];
     for (let i = 0; i < 7; i++) {
       const date = new Date(startOfWeek);
