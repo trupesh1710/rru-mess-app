@@ -2,13 +2,29 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Edit2, Trash2, LogOut, UtensilsCrossed, Bell } from 'lucide-react';
 import { supabase } from './supabaseClient';
+import { jwtDecode } from 'jwt-decode';
 
 export default function AdminPanel() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!localStorage.getItem('adminToken')) {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
       navigate('/admin-login');
+      return;
+    }
+    try {
+      const decoded = jwtDecode(token);
+      if (decoded.exp * 1000 < Date.now()) {
+        localStorage.removeItem('adminToken');
+        navigate('/admin-login');
+        return;
+      }
+    } catch (err) {
+      console.error('Invalid token', err);
+      localStorage.removeItem('adminToken');
+      navigate('/admin-login');
+      return;
     }
   }, [navigate]);
 

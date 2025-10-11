@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -68,7 +69,8 @@ export default async function handler(request) {
     console.log('IsValid:', isValid);
 
     if (isValid) {
-      const token = Buffer.from(`${username}:${Date.now()}`).toString('base64');
+      const jwtSecret = process.env.JWT_SECRET || 'your_jwt_secret_here';
+      const token = jwt.sign({ username }, jwtSecret, { expiresIn: '1h' });
       return new Response(JSON.stringify({ success: true, token }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
