@@ -1,32 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, UtensilsCrossed, Bell, CalendarDays } from 'lucide-react';
+import { supabase } from './supabaseClient';
 
 export default function UserView() {
   const [meals, setMeals] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [viewMode, setViewMode] = useState('today');
 
+  const fetchMeals = async () => {
+    try {
+      const { data, error } = await supabase.from('meals').select('*');
+      if (error) throw error;
+      setMeals(data || []);
+    } catch (err) {
+      console.error('Error fetching meals:', err);
+    }
+  };
+
+  const fetchAnnouncements = async () => {
+    try {
+      const { data, error } = await supabase.from('announcements').select('*');
+      if (error) throw error;
+      setAnnouncements(data || []);
+    } catch (err) {
+      console.error('Error fetching announcements:', err);
+    }
+  };
+
   useEffect(() => {
-    const sampleMeals = [
-      {
-        id: 1,
-        date: new Date().toISOString().split('T')[0],
-        breakfast: 'Poha, Tea, Banana',
-        lunch: 'Rice, Dal Tadka, Mix Veg, Roti, Salad',
-        snacks: 'Tea, Samosa',
-        dinner: 'Chapati, Paneer Butter Masala, Rice, Curd'
-      }
-    ];
-    const sampleAnnouncements = [
-      {
-        id: 1,
-        title: 'Special Dinner Tonight',
-        message: 'Celebrating Diwali with special sweets and snacks!',
-        date: new Date().toISOString().split('T')[0]
-      }
-    ];
-    setMeals(sampleMeals);
-    setAnnouncements(sampleAnnouncements);
+    fetchMeals();
+    fetchAnnouncements();
   }, []);
 
   const getTodaysMeal = () => {

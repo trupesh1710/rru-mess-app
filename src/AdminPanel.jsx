@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Edit2, Trash2, LogOut, UtensilsCrossed, Bell } from 'lucide-react';
+import { supabase } from './supabaseClient';
 
 export default function AdminPanel() {
   const navigate = useNavigate();
@@ -29,64 +30,99 @@ export default function AdminPanel() {
     message: '',
     date: ''
   });
+  const [loadingMeals, setLoadingMeals] = useState(true);
+  const [loadingAnnouncements, setLoadingAnnouncements] = useState(true);
+
+  const fetchMeals = async () => {
+    try {
+      const { data, error } = await supabase.from('meals').select('*');
+      if (error) throw error;
+      setMeals(data || []);
+    } catch (err) {
+      console.error('Error fetching meals:', err);
+    } finally {
+      setLoadingMeals(false);
+    }
+  };
+
+  const fetchAnnouncements = async () => {
+    try {
+      const { data, error } = await supabase.from('announcements').select('*');
+      if (error) throw error;
+      setAnnouncements(data || []);
+    } catch (err) {
+      console.error('Error fetching announcements:', err);
+    } finally {
+      setLoadingAnnouncements(false);
+    }
+  };
 
   useEffect(() => {
-    const sampleMeals = [
-      {
-        id: 1,
-        date: new Date().toISOString().split('T')[0],
-        breakfast: 'Poha, Tea, Banana',
-        lunch: 'Rice, Dal Tadka, Mix Veg, Roti, Salad',
-        snacks: 'Tea, Samosa',
-        dinner: 'Chapati, Paneer Butter Masala, Rice, Curd'
-      }
-    ];
-    const sampleAnnouncements = [
-      {
-        id: 1,
-        title: 'Special Dinner Tonight',
-        message: 'Celebrating Diwali with special sweets and snacks!',
-        date: new Date().toISOString().split('T')[0]
-      }
-    ];
-    setMeals(sampleMeals);
-    setAnnouncements(sampleAnnouncements);
+    fetchMeals();
+    fetchAnnouncements();
   }, []);
 
-  const handleAddMeal = () => {
+  const handleAddMeal = async () => {
     if (!formData.date || !formData.breakfast || !formData.lunch || !formData.snacks || !formData.dinner) {
       alert('Please fill all fields');
       return;
     }
 
-    if (editingMeal) {
-      const updated = meals.map(m => m.id === editingMeal.id ? { ...formData, id: m.id } : m);
-      setMeals(updated);
-      setEditingMeal(null);
-    } else {
-      const newMeal = { ...formData, id: Date.now() };
-      setMeals([...meals, newMeal]);
+    try {
+      if (editingMeal) {
+        const { error } = await supabase
+          .from('meals')
+          .update(formData)
+          .eq('id', editingMeal.id);
+        if (error) throw error;
+        setMeals(meals.map(m => m.id === editingMeal.id ? { ...formData, id: m.id } : m));
+        setEditingMeal(null);
+      } else {
+        const { data, error } = await supabase
+          .from('meals')
+          .insert(formData)
+          .select();
+        if (error) throw error;
+        setMeals([...meals, data[0]]);
+      }
+      setFormData({ date: '', breakfast: '', lunch: '', snacks: '', dinner: '' });
+      setShowAddForm(false);
+    } catch (err) {
+      console.error('Error saving meal:', err);
+      alert('Error saving meal');
     }
-    setFormData({ date: '', breakfast: '', lunch: '', snacks: '', dinner: '' });
-    setShowAddForm(false);
   };
 
-  const handleAddAnnouncement = () => {
+  const handleAddAnnouncement = async () => {
     if (!announcementData.title || !announcementData.message) {
       alert('Please fill title and message');
       return;
     }
 
-    if (editingAnnouncement) {
-      const updated = announcements.map(a => a.id === editingAnnouncement.id ? { ...announcementData, id: a.id } : a);
-      setAnnouncements(updated);
-      setEditingAnnouncement(null);
-    } else {
-      const newAnnouncement = { ...announcementData, id: Date.now(), date: new Date().toISOString().split('T')[0] };
-      setAnnouncements([...announcements, newAnnouncement]);
+    try {
+      if (editingAnnouncement) {
+        const { error } = await supabase
+          .from('announcements')
+          .update({ title: announcementData.title, message: announcementData.message })
+          .eq('id', editingAnnouncement.id);
+        if (error) throw error;
+        setAnnouncements(announcements.map(a => a.id === editingAnnouncement.id ? { ...announcementData, id: a.id } : a));
+        setEditingAnnouncement(null);
+      } else {
+        const newAnnouncement = { ...announcementData, date: new Date().toISOString().split('T')[0] };
+        const { data, error } = await supabase
+          .from('announcements')
+          .insert(newAnnouncement)
+          .select();
+        if (error) throw error;
+        setAnnouncements([...announcements, data[0]]);
+      }
+      setAnnouncementData({ title: '', message: '', date: '' });
+      setShowAnnouncementForm(false);
+    } catch (err) {
+      console.error('Error saving announcement:', err);
+      alert('Error saving announcement');
     }
-    setAnnouncementData({ title: '', message: '', date: '' });
-    setShowAnnouncementForm(false);
   };
 
   const handleEdit = (meal) => {
@@ -95,9 +131,16 @@ export default function AdminPanel() {
     setShowAddForm(true);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this meal?')) {
-      setMeals(meals.filter(m => m.id !== id));
+      try {
+        const { error } = await supabase.from('meals').delete().eq('id', id);
+        if (error) throw error;
+        setMeals(meals.filter(m => m.id !== id));
+      } catch (err) {
+        console.error('Error deleting meal:', err);
+        alert('Error deleting meal');
+      }
     }
   };
 
@@ -107,9 +150,16 @@ export default function AdminPanel() {
     setShowAnnouncementForm(true);
   };
 
-  const handleDeleteAnnouncement = (id) => {
+  const handleDeleteAnnouncement = async (id) => {
     if (window.confirm('Are you sure you want to delete this announcement?')) {
-      setAnnouncements(announcements.filter(a => a.id !== id));
+      try {
+        const { error } = await supabase.from('announcements').delete().eq('id', id);
+        if (error) throw error;
+        setAnnouncements(announcements.filter(a => a.id !== id));
+      } catch (err) {
+        console.error('Error deleting announcement:', err);
+        alert('Error deleting announcement');
+      }
     }
   };
 
